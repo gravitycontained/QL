@@ -33,7 +33,7 @@ sfml-audio-d.lib
 sfml-network-d.lib
 ```
 
-hello world program:
+# Hello World
 
 ```
 #include <ql.hpp>
