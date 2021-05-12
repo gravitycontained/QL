@@ -74,3 +74,7 @@ int main() {
 	framework.game_loop();
 }
 ```
+
+compile and execute and you should see this:
+
+![Red Circle on Black Background](https://i.imgur.com/jahBJvQ.png)
