@@ -2,9 +2,9 @@
 #ifndef QL_HPP
 #define QL_HPP
 
-//QL.hpp
+//QL.hpp from github.com/DanielRabl/QL
 //Quick Library
-//mini version of QPL: github.com/DanielRabl/QL
+//mini version of QPL: github.com/DanielRabl/QPL
 //written by Daniel Rabl
 //created 2021 March, 10
 
