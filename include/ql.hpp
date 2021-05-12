@@ -8,6 +8,7 @@
 //written by Daniel Rabl
 //created 2021 March, 10
 
+#ifndef QL_NO_SFML
 #include <SFML/Graphics.hpp>
 
 ////////////////////////////////////////////////////////////
@@ -33,6 +34,7 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 ////////////////////////////////////////////////////////////
+#endif
 
 #include <algorithm>
 #include <array>
@@ -1145,11 +1147,33 @@ namespace ql {
 			this->set(list);
 		}
 
+#ifndef QL_NO_SFML
 		template<typename U>
 		constexpr vectorN(const sf::Vector2<U>& other) {
 			*this = other;
 		}
-
+		template<typename U>
+		constexpr vectorN& operator=(const sf::Vector2<U>& other) {
+			if constexpr (N == 1) {
+				this->x = other.x;
+			}
+			else {
+				this->x = other.x;
+				this->y = other.y;
+				this->clear(2);
+			}
+			return *this;
+		}
+		template<typename U>
+		constexpr operator sf::Vector2<U>() const {
+			if constexpr (N == 1) {
+				return sf::Vector2<U>(static_cast<U>(this->x), U{ 0 });
+			}
+			else {
+				return sf::Vector2<U>(static_cast<U>(this->x), static_cast<U>(this->y));
+			}
+		}
+#endif
 		constexpr vectorN& operator=(const vectorN& other) {
 			this->data = other.data;
 			return *this;
@@ -1170,19 +1194,6 @@ namespace ql {
 			this->clear(stop);
 			return *this;
 		}
-		template<typename U>
-		constexpr vectorN& operator=(const sf::Vector2<U>& other) {
-			if constexpr (N == 1) {
-				this->x = other.x;
-			}
-			else {
-				this->x = other.x;
-				this->y = other.y;
-				this->clear(2);
-			}
-			return *this;
-		}
-
 		template<ql::size N, typename U>
 		constexpr vectorN& operator=(const std::array<U, N>& array) {
 			this->set(array);
@@ -1238,16 +1249,6 @@ namespace ql {
 		constexpr void clear(ql::size offset = 0u) {
 			for (ql::size i = offset; i < this->data.size(); ++i) {
 				this->data[i] = T{ 0 };
-			}
-		}
-
-		template<typename U>
-		constexpr operator sf::Vector2<U>() const {
-			if constexpr (N == 1) {
-				return sf::Vector2<U>(static_cast<U>(this->x), U{ 0 });
-			}
-			else {
-				return sf::Vector2<U>(static_cast<U>(this->x), static_cast<U>(this->y));
 			}
 		}
 
@@ -1500,9 +1501,11 @@ namespace ql {
 		rgb() {
 			*this = rgb::white;
 		}
+#ifndef QL_NO_SFML
 		rgb(sf::Color color) {
 			*this = color;
 		}
+#endif
 		rgb(ql::u8 r, ql::u8 g, ql::u8 b, ql::u8 a = ql::u8_max) {
 			this->c.r = r;
 			this->c.g = g;
@@ -1528,6 +1531,7 @@ namespace ql {
 			this->uint = other.uint;
 			return *this;
 		}
+#ifndef QL_NO_SFML
 		ql::rgb& operator=(sf::Color color) {
 			this->c.r = color.r;
 			this->c.g = color.g;
@@ -1535,6 +1539,15 @@ namespace ql {
 			this->c.a = color.a;
 			return *this;
 		}
+		operator sf::Color() const {
+			sf::Color color;
+			color.r = this->c.r;
+			color.g = this->c.g;
+			color.b = this->c.b;
+			color.a = this->c.a;
+			return color;
+		}
+#endif
 		ql::rgb& operator=(ql::u32 uint) {
 
 			if (uint <= (ql::u32_max >> 8)) {
@@ -1548,15 +1561,6 @@ namespace ql {
 		}
 		bool operator==(const rgb& other) const {
 			return this->uint == other.uint;
-		}
-
-		operator sf::Color() const {
-			sf::Color color;
-			color.r = this->c.r;
-			color.g = this->c.g;
-			color.b = this->c.b;
-			color.a = this->c.a;
-			return color;
 		}
 
 		std::string string() const {
@@ -1759,6 +1763,7 @@ namespace ql {
 	//resources
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+#ifndef QL_NO_SFML
 	struct resources {
 		void add_font(const std::string& name, const std::string& path) {
 			if (!ql::file_exists(path)) {
@@ -2724,6 +2729,7 @@ namespace ql {
 	void framework::set_cursor_position(ql::vector2i position) {
 		//todo
 	}
+#endif
 }
 
 
