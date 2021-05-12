@@ -1,6 +1,6 @@
 # QL
 
-Quick Library. Written by Daniel Rabl (danielrabl1999@gmail.com). Created 2021 March, 10
+Written by Daniel Rabl (danielrabl1999@gmail.com). Created 2021 March, 10
 
 A mini version of [QPL](https://github.com/DanielRabl/QPL)
 
