@@ -1,16 +1,28 @@
 # QL
 
 Quick Library.
+
 Written by Daniel Rabl (danielrabl1999@gmail.com).
+
 Created 2021 March, 10
+
 A mini version of [QPL](https://github.com/DanielRabl/QPL)
 
 Comes with standard utility and SFML utilities.
+
 `#define QL_NO_SFML` to not use any SFML utilities.
 
 # Setup
 To use this library, download the zip and include `ql.hpp`.
-Download [SFML](https://www.sfml-dev.org/). Example setup assuming SFML folder is named `SFML-2.5.1`: Set include folder `SFML-2.5.1/include` and lib folder `SFML-2.5.1/lib`. Copy the binary files (`.dll` files) from `SFML-2.5.1/bin` into your project.
+
+Download [SFML](https://www.sfml-dev.org/). 
+
+Example setup assuming SFML folder is named `SFML-2.5.1`:
+
+Set include folder `SFML-2.5.1/include` and lib folder `SFML-2.5.1/lib`. 
+
+Copy the binary files (`.dll` files) from `SFML-2.5.1/bin` into your project.
+
 Add linker dependencies:
 
 release x86/x64:
