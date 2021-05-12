@@ -2,12 +2,12 @@
 #ifndef QL_HPP
 #define QL_HPP
 
-//QL.hpp
-//Quick Library
-//repository: from github.com/DanielRabl/QL
-//mini version of QPL: github.com/DanielRabl/QPL
+//QL.hpp - "Quick Library"
+//github.com/DanielRabl/QL
 //written by Daniel Rabl
 //created 2021 March, 10
+// 
+//mini version of QPL: github.com/DanielRabl/QPL
 
 #ifndef QL_NO_SFML
 #include <SFML/Graphics.hpp>
