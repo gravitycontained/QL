@@ -8,7 +8,7 @@ Comes with standard utility and SFML utilities.
 `#define QL_NO_SFML` to not use any SFML utilities.
 
 # Setup
-To use this library, download the zip and include `ql.hpp`.
+To use this library, download the zip and include `ql.hpp`. Set the C++ Standard to latest version to `/std:c++20` or `/std:c++latest`.
 
 Download latest [SFML](https://www.sfml-dev.org/) version. Look for 64 bit version if possible. 
 
