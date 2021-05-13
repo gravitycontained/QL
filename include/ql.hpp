@@ -47,6 +47,7 @@
 #include <limits>
 #include <random>
 #include <set>
+#include <span>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -98,6 +99,35 @@ namespace ql {
 	constexpr f64 f64_min_zero = std::numeric_limits<f64>::min();
 	constexpr f64 f64_max = std::numeric_limits<f64>::max();
 
+	constexpr ql::f64 f64_epsilon = std::numeric_limits<ql::f64>::epsilon();
+	constexpr ql::f64 f32_epsilon = std::numeric_limits<ql::f32>::epsilon();
+
+	constexpr ql::size f64_digits = std::numeric_limits<ql::f64>::max_digits10;
+	constexpr ql::size f32_digits = std::numeric_limits<ql::f32>::max_digits10;
+
+	constexpr ql::f64 pi      = 3.14159265358979323846;
+	constexpr ql::f64 sqrt2   = 1.41421356237309504880;
+	constexpr ql::f64 sqrt3   = 1.73205080756887729352;
+	constexpr ql::f64 sqrt5   = 2.23606797749978969640;
+	constexpr ql::f64 sqrt1_2 = 0.70710678118654752440;
+	constexpr ql::f64 e       = 2.71828182845904523536;
+	constexpr ql::f64 ln2     = 0.69314718055994530941;
+	constexpr ql::f64 ln10    = 2.30258509299404568402;
+	constexpr ql::f64 phi     = 1.61803398874989484820;
+
+	constexpr ql::size f32_mantissa_size() {
+		return 23;
+	}
+	constexpr ql::size f32_exponent_size() {
+		return 8;
+	}
+	constexpr ql::size f64_mantissa_size() {
+		return 52;
+	}
+	constexpr ql::size f64_exponent_size() {
+		return 11;
+	}
+
 	template <typename T>
 	constexpr auto type_min() {
 		return std::numeric_limits<T>::min();
@@ -105,6 +135,16 @@ namespace ql {
 	template <typename T>
 	constexpr auto type_max() {
 		return std::numeric_limits<T>::max();
+	}
+
+
+	template<typename T>
+	constexpr inline ql::size bytes_in_type() {
+		return sizeof(T);
+	}
+	template<typename T>
+	constexpr inline ql::size bits_in_type() {
+		return sizeof(T) * CHAR_BIT;
 	}
 
 	template<typename T1, typename T2>
@@ -132,9 +172,47 @@ namespace ql {
 	template<typename T>
 	concept is_unsigned = std::numeric_limits<T>::is_unsigned;
 
-
 	template<typename T>
 	concept is_floating_point = std::is_floating_point_v<T>;
+
+	template<ql::size bits, bool sign>
+	using int_type = typename
+		std::conditional_t<bits == 8u,  std::conditional_t<sign, ql::identity<ql::i8>,	ql::identity<ql::u8>>,
+		std::conditional_t<bits == 16u, std::conditional_t<sign, ql::identity<ql::i16>,	ql::identity<ql::u16>>,
+		std::conditional_t<bits == 32u, std::conditional_t<sign, ql::identity<ql::i32>,	ql::identity<ql::u32>>,
+		std::conditional_t<bits == 64u, std::conditional_t<sign, ql::identity<ql::i64>,	ql::identity<ql::u64>>,
+		ql::error_type>>>>::type;
+
+	template<ql::size bits>
+	using float_type = typename
+		std::conditional_t<bits == 32u,  ql::identity<ql::f32>,
+		std::conditional_t<bits == 64u,  ql::identity<ql::f64>,
+		ql::error_type>>::type;
+
+	template<typename T> requires ql::is_integer<T>
+	using signed_type = typename
+			std::conditional_t<ql::bits_in_type<T>() == 8u,  ql::identity<ql::i8>,
+			std::conditional_t<ql::bits_in_type<T>() == 16u, ql::identity<ql::i16>,
+			std::conditional_t<ql::bits_in_type<T>() == 32u, ql::identity<ql::i32>,
+			std::conditional_t<ql::bits_in_type<T>() == 64u, ql::identity<ql::i64>,
+			ql::error_type>>>>::type;
+
+	template<typename T> requires ql::is_integer<T>
+	using unsigned_type = typename
+			std::conditional_t<ql::bits_in_type<T>() == 8u,  ql::identity<ql::u8>,
+			std::conditional_t<ql::bits_in_type<T>() == 16u, ql::identity<ql::u16>,
+			std::conditional_t<ql::bits_in_type<T>() == 32u, ql::identity<ql::u32>,
+			std::conditional_t<ql::bits_in_type<T>() == 64u, ql::identity<ql::u64>,
+			ql::error_type>>>>::type;
+
+	template<typename T>
+	constexpr auto signed_cast(T value) {
+		return static_cast<signed_type<T>>(value);
+	}
+	template<typename T>
+	constexpr auto unsigned_cast(T value) {
+		return static_cast<unsigned_type<T>>(value);
+	}
 
 	template<typename T>
 	concept is_container = requires(T a, const T b) {
@@ -156,15 +234,6 @@ namespace ql {
 
 	template<typename C> requires is_container<C>
 	using container_subtype = std::decay_t<decltype(*(std::declval<C>().begin()))>;
-
-	template<typename T>
-	constexpr inline ql::size bytes_in_type() {
-		return sizeof(T);
-	}
-	template<typename T>
-	constexpr inline ql::size bits_in_type() {
-		return sizeof(T) * CHAR_BIT;
-	}
 
 
 	template<typename T>
@@ -282,6 +351,23 @@ namespace ql {
 		return to_string(std::string(string.length() >= length ? 0ull : length - string.length(), append), string);
 	}
 
+	template<typename... Args>
+	std::string to_string_precision(ql::size precision, Args&&... args) {
+		std::ostringstream stream;
+		((stream << std::fixed << std::setprecision(precision) << (ql::is_integer<decltype(args)> ? static_cast<ql::f64>(args) : args)), ...);
+		return stream.str();
+	}
+	template<typename... Args>
+	std::string to_string_full_precision(Args&&... args) {
+		std::ostringstream stream;
+		((stream << std::fixed << std::setprecision(ql::f64_digits) << (ql::is_integer<decltype(args)> ? static_cast<ql::f64>(args) : args)), ...);
+		return stream.str();
+	}
+
+	std::string bool_string(bool check) {
+		return (check ? "true" : "false");
+	}
+
 	template<typename T>
 	void print(T arg) {
 		if constexpr (ql::is_wstring_type<T>()) {
@@ -301,6 +387,34 @@ namespace ql {
 		ql::print('\n');
 	}
 
+
+	template<typename C> requires ql::is_container<C>
+	std::string container_to_string(C& data, const std::string_view& format = "(a, b)") {
+			if (format.length() < 4u) {
+				throw std::exception(ql::to_cstring("ql::container_to_string<", ql::type_name<C>(), ">: format \"", format, "\" is invalid."));
+			}
+			auto sub_size = format.length() - 4u;
+			std::ostringstream stream;
+			stream << format.front();
+			bool first = true;
+			for (auto& i : data) {
+				if (!first) {
+					stream << format.substr(2, sub_size);
+				}
+				first = false;
+				stream << i;
+			}
+			stream << format.back();
+			return stream.str();
+		}
+	template<typename C> requires ql::is_container<C>
+	void print_container(C& data, const std::string_view& format = "(a, b)") {
+		ql::print(ql::container_to_string(data, format));
+	}
+	template<typename C> requires ql::is_container<C>
+	void println_container(C& data, const std::string_view& format = "(a, b)") {
+		ql::println(ql::container_to_string(data, format));
+	}
 	
 	//algorithms
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -317,6 +431,11 @@ namespace ql {
 		std::array<type, sizeof...(Args)> result{ static_cast<type>(args)... };
 
 		return result;
+	}
+
+	template<typename C> requires ql::is_contiguous_container<C>
+	void clear_container(C& data, ql::container_subtype<C> clear_value = 0) {
+		memset(data.data(), static_cast<ql::i32>(clear_value), data.size() * sizeof(ql::container_subtype<C>));
 	}
 
 	template<typename T1, typename T2>
@@ -338,13 +457,29 @@ namespace ql {
 	}
 
 	template<typename T>
-	constexpr T clamp(T min, T value, T max) {
-		return ql::min(max, ql::max(min, value));
+	constexpr T abs(T value) {
+		if constexpr (ql::is_signed<T>) {
+			return value;
+		}
+		else {
+			return (value < T{ 0 } ? -value : value);
+		}
+	}
+
+	template<typename T, typename U>
+	constexpr auto div_mod(T a, U b) {
+		auto div = a / b;
+		auto mod = a % b;
+		return std::make_pair(div, mod);
 	}
 
 	template<typename T>
+	constexpr T clamp(T min, T value, T max) {
+		return ql::min(max, ql::max(min, value));
+	}
+	template<typename T>
 	constexpr T clamp_0_1(T value) {
-		return ql::min(T{ 1 }, ql::max({ 0 }, value));
+		return ql::min(T{ 1 }, ql::max(T{ 0 }, value));
 	}
 
 	template<typename T> requires is_arithmetic<T>
@@ -352,13 +487,94 @@ namespace ql {
 		return value < base ? ql::size{ 1 } : ql::size{ 1 } + number_of_digits(value / base, base);
 	}
 
+	template<typename T, typename F>
+	constexpr auto linear_interpolation(T a, T b, F delta) {
+		return a * (F{ 1 } - delta) + (b * delta);
+	}
+
+	template<typename T, typename F>
+	constexpr auto linear_interpolation_2D(T xx, T xy, T yx, T yy, F fx, F fy) {
+		return ql::linear_interpolation(ql::linear_interpolation(xx, xy, fx), ql::linear_interpolation(yx, yy, fx), fy);
+	}
+
+	template<typename T, typename F>
+	constexpr auto cubic_interpolation(T a, T b, T c, T d, F delta) {
+		return
+			(d - c - a + b) * (delta * delta * delta) +
+			(a * 2 - b * 2 - d + c) * (delta * delta) +
+			(c - a) * delta + b;
+	}
+	template<typename T, typename F>
+	constexpr auto cubic_interpolation(T a, T b, F delta) {
+		return ql::cubic_interpolation(a, a, b, b, delta);
+	}
+	template<typename T, typename F>
+	constexpr auto cubic_interpolation_2D(
+		T a1, T b1, T c1, T d1,
+		T a2, T b2, T c2, T d2,
+		T a3, T b3, T c3, T d3,
+		T a4, T b4, T c4, T d4,
+		F fx, F fy) {
+		return ql::cubic_interpolation(
+			ql::cubic_interpolation(a1, b1, c1, d1, fx),
+			ql::cubic_interpolation(a2, b2, c2, d2, fx),
+			ql::cubic_interpolation(a3, b3, c3, d3, fx),
+			ql::cubic_interpolation(a4, b4, c4, d4, fx), fy);
+	}
+
+	template<typename C, typename F> requires ql::is_container<C>
+	ql::container_subtype<C> linear_container_interpolation(const C& data, F progress) {
+		if (data.empty()) {
+			return {};
+		}
+
+		auto index = static_cast<ql::u32>(progress * (data.size() - 1));
+
+		ql::container_subtype<C> a = data[index];
+		ql::container_subtype<C> b = a;
+
+		if (index < data.size() - 1) {
+			b = data[index + 1];
+		}
+
+		auto left_over = ((data.size() - 1) * progress) - index;
+
+		return ql::linear_interpolation(a, b, left_over);
+	}
+
+	template<typename C, typename F> requires ql::is_container<C>
+	ql::container_subtype<C> cubic_container_interpolation(const C& data, F progress) {
+		if (data.empty()) {
+			return {};
+		}
+
+		auto index = static_cast<ql::u32>(progress * (data.size() - 1));
+
+		ql::container_subtype<C> a, b, c, d;
+		c = a = b = data[index];
+		if (index >= 1u) {
+			a = data[index - 1];
+		}
+
+		if (index < (data.size() - 1)) {
+			c = data[index + 1];
+		}
+		d = c;
+
+		if (index < (data.size() - 2)) {
+			d = data[index + 2];
+		}
+
+		auto left_over = ((data.size() - 1) * progress) - index;
+
+		return ql::cubic_interpolation(a, b, c, d, left_over);
+	}
 
 	//time
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 	class time {
 	public:
-
 		static time clock_time() {
 			return time{
 				static_cast<ql::u64>(
@@ -861,6 +1077,7 @@ namespace ql {
 	class halted_clock : public ql::clock {
 	public:
 		halted_clock() : ql::clock(false) {
+
 		}
 	};
 	std::ostream& operator<<(std::ostream& os, const ql::clock& clock) {
@@ -869,7 +1086,6 @@ namespace ql {
 	std::ostream& operator<<(std::ostream& os, const ql::halted_clock& clock) {
 		return (os << clock.elapsed().string());
 	}
-
 
 	//random
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -880,9 +1096,9 @@ namespace ql {
 	template<ql::size bits>
 	class random_engine {
 	public:
-		using type = typename std::conditional_t<
-			bits == 32, identity<std::mt19937>, std::conditional_t<
-			bits == 64, identity<std::mt19937_64>,
+		using type = typename
+			std::conditional_t<bits == 32, identity<std::mt19937>, 
+			std::conditional_t<bits == 64, identity<std::mt19937_64>,
 			ql::error_type>>::type;
 
 		void seed(ql::u64 value) {
@@ -939,9 +1155,9 @@ namespace ql {
 
 		}
 
-		using type = typename std::conditional_t<
-			ql::is_integer<T>, identity<std::uniform_int_distribution<T>>, std::conditional_t<
-			ql::is_floating_point<T>, identity<std::uniform_real_distribution<T>>,
+		using type = typename 
+			std::conditional_t<ql::is_integer<T>, identity<std::uniform_int_distribution<T>>,
+			std::conditional_t<ql::is_floating_point<T>, identity<std::uniform_real_distribution<T>>,
 			ql::error_type>>::type;
 
 
@@ -1004,6 +1220,115 @@ namespace ql {
 		ql::distribution<T> dist(ql::type_min<T>(), ql::type_max<T>());
 		return ql::detail::rng.rng.generate(dist);
 	}
+
+	//perlin noise 
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+	template<ql::size bits, ql::size N>
+	class perlin_noise_N {
+	public:
+		using uint_type = ql::int_type<bits, 0>;
+		using int_type = ql::int_type<bits, 1>;
+		using float_type = ql::float_type<bits>;
+
+		perlin_noise_N() {
+			this->construct();
+		}
+		perlin_noise_N(uint_type seed) {
+			this->set_seed(seed);
+		}
+		void set_seed(uint_type seed) {
+			this->m_seed = seed;
+			this->m_engine.seed(seed);
+			this->create_hash();
+		}
+		void set_seed_random() {
+			this->m_seed = ~uint_type{ 0 };
+			this->m_engine.seed_random();
+			this->create_hash();
+		}
+		uint_type get_seed() const {
+			return this->m_seed;
+		}
+
+		int_type hash_at(int_type x, int_type y) {
+			int_type tmp = this->m_hash[y % N];
+			return this->m_hash[(tmp + x) % N];
+		}
+
+		constexpr static float_type linear_interpolation(float_type x, float_type y, float_type s) {
+			return x + s * (y - x);
+		}
+
+		constexpr static float_type smooth_interpolation(float_type x, float_type y, float_type s) {
+			return linear_interpolation(x, y, s * s * (3 - 2 * s));
+		}
+
+		float_type get(float_type x, float_type y, float_type freq, ql::u32 depth) {
+			float_type xa = x * freq;
+			float_type ya = y * freq;
+			float_type amp = 1.0;
+			float_type sum = 0;
+			float_type div = 0.0;
+
+			for (ql::u32 i = 0u; i < depth; ++i) {
+				div += N * amp;
+				sum += this->get_noise(xa, ya) * amp;
+				amp /= 2;
+				xa *= 2;
+				ya *= 2;
+			}
+
+			return sum / div;
+		}
+		float_type get(float_type x, float_type y) {
+			return this->get(x, y, this->frequency, this->depth);
+		}
+		float_type operator()(float_type x, float_type y, float_type freq, ql::u32 depth) {
+			return this->get(x, y, freq, depth);
+		}
+		float_type operator()(float_type x, float_type y) {
+			return this->get(x, y, this->frequency, this->depth);
+		}
+
+
+
+		void construct() {
+			this->set_seed(5678u);
+		}
+		void create_hash() {
+			ql::clear_container(this->m_hash);
+			for (uint_type i = 0u; i < N - 1; ++i) {
+				auto j = this->m_engine.generate(i + 1, static_cast<uint_type>(N) - 1);
+				std::swap(this->m_hash[i], this->m_hash[j]);
+			}
+		}
+
+		float_type frequency = 0.1;
+		ql::size depth = 5;
+	private:
+
+		float_type get_noise(float_type x, float_type y) {
+			auto x_int = static_cast<int_type>(x);
+			auto y_int = static_cast<int_type>(y);
+			auto x_frac = x - x_int;
+			auto y_frac = y - y_int;
+
+			auto s = static_cast<int_type>(this->hash_at(x_int, y_int));
+			auto t = static_cast<int_type>(this->hash_at(x_int + 1, y_int));
+			auto u = static_cast<int_type>(this->hash_at(x_int, y_int + 1));
+			auto v = static_cast<int_type>(this->hash_at(x_int + 1, y_int + 1));
+			auto low = smooth_interpolation(static_cast<float_type>(s), static_cast<float_type>(t), x_frac);
+			auto high = smooth_interpolation(static_cast<float_type>(u), static_cast<float_type>(v), x_frac);
+			return smooth_interpolation(low, high, y_frac);
+		}
+
+		uint_type m_seed;
+		ql::random_engine<64> m_engine;
+		std::array<int_type, N> m_hash;
+	};
+
+	using perlin_noise = perlin_noise_N<64, 256>;
 
 
 	//filesys 
@@ -1312,7 +1637,6 @@ namespace ql {
 			return copy;
 		}
 
-
 		template<typename U>
 		constexpr vectorN<N, T>& operator-=(const std::initializer_list<U>& list) {
 			vectorN<N, T> add;
@@ -1345,7 +1669,6 @@ namespace ql {
 			copy -= u;
 			return copy;
 		}
-
 
 		template<typename U>
 		constexpr vectorN<N, T>& operator*=(const std::initializer_list<U>& list) {
@@ -1380,7 +1703,6 @@ namespace ql {
 			return copy;
 		}
 
-
 		template<typename U>
 		constexpr vectorN<N, T>& operator/=(const std::initializer_list<U>& list) {
 			vectorN<N, T> add;
@@ -1413,7 +1735,6 @@ namespace ql {
 			copy /= u;
 			return copy;
 		}
-
 
 		template<typename U>
 		constexpr vectorN<N, T>& operator%=(const std::initializer_list<U>& list) {
@@ -1448,7 +1769,6 @@ namespace ql {
 			return copy;
 		}
 
-
 		constexpr vectorN operator-() const {
 			vectorN copy;
 			for (ql::u32 i = 0u; i < this->data.size(); ++i) {
@@ -1463,7 +1783,6 @@ namespace ql {
 			}
 			return copy;
 		}
-
 
 		template<ql::size N, typename T>
 		friend std::ostream& operator<<(std::ostream& os, const ql::vectorN<N, T>& vec);
@@ -1498,6 +1817,152 @@ namespace ql {
 	//rgb
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+	union rgb;
+
+	struct frgb {
+		ql::f32 r = 0.0f;
+		ql::f32 g = 0.0f;
+		ql::f32 b = 0.0f;
+
+		constexpr frgb() {
+
+		}
+		constexpr void clamp() {
+			this->r = ql::clamp_0_1(this->r);
+			this->g = ql::clamp_0_1(this->g);
+			this->b = ql::clamp_0_1(this->b);
+		}
+
+		operator rgb() const;
+		rgb get_rgb() const;
+		ql::frgb& operator=(const ql::rgb& rgb);
+
+#ifndef QL_NO_SFML
+		ql::frgb& operator=(const sf::Color& color) {
+			this->r = color.r;
+			this->g = color.g;
+			this->b = color.b;
+			return *this;
+		}
+		operator sf::Color() const {
+			sf::Color color;
+			color.r = static_cast<ql::u8>(ql::clamp_0_1(this->r) * 255.0f);
+			color.g = static_cast<ql::u8>(ql::clamp_0_1(this->g) * 255.0f);
+			color.b = static_cast<ql::u8>(ql::clamp_0_1(this->b) * 255.0f);
+			color.a = ql::u8{ 255 };
+			return color;
+		}
+#endif
+
+
+		std::string string() const {
+			std::ostringstream stream;
+			stream << '(';
+			stream << ql::to_string_precision(3, this->r) << ", ";
+			stream << ql::to_string_precision(3, this->g) << ", ";
+			stream << ql::to_string_precision(3, this->b) << ')';
+			return stream.str();
+		}
+
+		constexpr ql::frgb& operator*=(ql::frgb other) {
+			this->r *= other.r;
+			this->g *= other.g;
+			this->b *= other.b;
+			return *this;
+		}
+		constexpr ql::frgb operator*(ql::frgb other) const {
+			auto copy = *this;
+			copy *= other;
+			return copy;
+		}
+		constexpr ql::frgb& operator-=(ql::frgb other) {
+			this->r -= other.r;
+			this->g -= other.g;
+			this->b -= other.b;
+			return *this;
+		}
+		constexpr ql::frgb operator-(ql::frgb other) const {
+			auto copy = *this;
+			copy -= other;
+			return copy;
+		}
+		constexpr ql::frgb& operator/=(ql::frgb other) {
+			this->r /= other.r;
+			this->g /= other.g;
+			this->b /= other.b;
+			return *this;
+		}
+		constexpr ql::frgb operator/(ql::frgb other) const {
+			auto copy = *this;
+			copy /= other;
+			return copy;
+		}
+		constexpr ql::frgb& operator+=(ql::frgb other) {
+			this->r += other.r;
+			this->g += other.g;
+			this->b += other.b;
+			return *this;
+		}
+		constexpr ql::frgb operator+(ql::frgb other) const {
+			auto copy = *this;
+			copy += other;
+			return copy;
+		}
+
+		template<typename T> requires ql::is_arithmetic<T>
+		constexpr ql::frgb& operator*=(T other) {
+			this->r = static_cast<ql::f32>(this->r * other);
+			this->g = static_cast<ql::f32>(this->g * other);
+			this->b = static_cast<ql::f32>(this->b * other);
+			return *this;
+		}
+		template<typename T> requires ql::is_arithmetic<T>
+		constexpr ql::frgb operator*(T other) const {
+			auto copy = *this;
+			copy *= other;
+			return copy;
+		}
+		template<typename T> requires ql::is_arithmetic<T>
+		constexpr ql::frgb& operator/=(T other) {
+			this->r = static_cast<ql::f32>(this->r / other);
+			this->g = static_cast<ql::f32>(this->g / other);
+			this->b = static_cast<ql::f32>(this->b / other);
+			return *this;
+		}
+		template<typename T> requires ql::is_arithmetic<T>
+		constexpr ql::frgb operator/(T other) const {
+			auto copy = *this;
+			copy /= other;
+			return copy;
+		}
+		template<typename T> requires ql::is_arithmetic<T>
+		constexpr ql::frgb& operator+=(T other) {
+			this->r = static_cast<ql::f32>(this->r + other);
+			this->g = static_cast<ql::f32>(this->g + other);
+			this->b = static_cast<ql::f32>(this->b + other);
+			return *this;
+		}
+		template<typename T> requires ql::is_arithmetic<T>
+		constexpr ql::frgb operator+(T other) const {
+			auto copy = *this;
+			copy += other;
+			return copy;
+		}
+		template<typename T> requires ql::is_arithmetic<T>
+		constexpr ql::frgb& operator-=(T other) {
+			this->r = static_cast<ql::f32>(this->r - other);
+			this->g = static_cast<ql::f32>(this->g - other);
+			this->b = static_cast<ql::f32>(this->b - other);
+			return *this;
+		}
+		template<typename T> requires ql::is_arithmetic<T>
+		constexpr ql::frgb operator-(T other) const {
+			auto copy = *this;
+			copy -= other;
+			return copy;
+		}
+	};
+
 	union rgb {
 		rgb() {
 			*this = rgb::white;
@@ -1528,12 +1993,16 @@ namespace ql {
 		} c;
 		ql::u32 uint;
 
+		ql::rgb& operator=(const frgb& other) {
+			*this = other.get_rgb();
+			return *this;
+		}
 		ql::rgb& operator=(const rgb& other) {
 			this->uint = other.uint;
 			return *this;
 		}
 #ifndef QL_NO_SFML
-		ql::rgb& operator=(sf::Color color) {
+		ql::rgb& operator=(const sf::Color& color) {
 			this->c.r = color.r;
 			this->c.g = color.g;
 			this->c.b = color.b;
@@ -1549,6 +2018,14 @@ namespace ql {
 			return color;
 		}
 #endif
+		operator frgb() const {
+			frgb result;
+			result.r = this->c.r / 255.0f;
+			result.g = this->c.g / 255.0f;
+			result.b = this->c.b / 255.0f;
+			return result;
+		}
+
 		ql::rgb& operator=(ql::u32 uint) {
 
 			if (uint <= (ql::u32_max >> 8)) {
@@ -1671,9 +2148,9 @@ namespace ql {
 
 		template<typename T> requires is_arithmetic<T>
 		ql::rgb& operator/=(T value) {
-			this->c.r /= value;
-			this->c.g /= value;
-			this->c.b /= value;
+			this->c.r = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.r / value), static_cast<ql::i64>(ql::u8_max)));
+			this->c.g = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.g / value), static_cast<ql::i64>(ql::u8_max)));
+			this->c.b = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.b / value), static_cast<ql::i64>(ql::u8_max)));
 			return *this;
 		}
 		template<typename T> requires is_arithmetic<T>
@@ -1684,9 +2161,9 @@ namespace ql {
 		}
 		template<typename T> requires is_arithmetic<T>
 		ql::rgb& operator*=(T value) {
-			this->c.r *= value;
-			this->c.g *= value;
-			this->c.b *= value;
+			this->c.r = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.r * value), static_cast<ql::i64>(ql::u8_max)));
+			this->c.g = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.g * value), static_cast<ql::i64>(ql::u8_max)));
+			this->c.b = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.b * value), static_cast<ql::i64>(ql::u8_max)));
 			return *this;
 		}
 		template<typename T> requires is_arithmetic<T>
@@ -1697,9 +2174,9 @@ namespace ql {
 		}
 		template<typename T> requires is_arithmetic<T>
 		ql::rgb& operator+=(T value) {
-			this->c.r = ql::clamp(ql::i16{}, static_cast<ql::i16>(this->c.r) + value, static_cast<ql::i16>(ql::u8_max));
-			this->c.g = ql::clamp(ql::i16{}, static_cast<ql::i16>(this->c.g) + value, static_cast<ql::i16>(ql::u8_max));
-			this->c.b = ql::clamp(ql::i16{}, static_cast<ql::i16>(this->c.b) + value, static_cast<ql::i16>(ql::u8_max));
+			this->c.r = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.r) + value, static_cast<ql::i16>(ql::u8_max)));
+			this->c.g = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.g) + value, static_cast<ql::i16>(ql::u8_max)));
+			this->c.b = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.b) + value, static_cast<ql::i16>(ql::u8_max)));
 			return *this;
 		}
 		template<typename T> requires is_arithmetic<T>
@@ -1710,9 +2187,9 @@ namespace ql {
 		}
 		template<typename T> requires is_arithmetic<T>
 		ql::rgb& operator-=(T value) {
-			this->c.r = ql::clamp(ql::i16{}, static_cast<ql::i16>(this->c.r) - value, static_cast<ql::i16>(ql::u8_max));
-			this->c.g = ql::clamp(ql::i16{}, static_cast<ql::i16>(this->c.g) - value, static_cast<ql::i16>(ql::u8_max));
-			this->c.b = ql::clamp(ql::i16{}, static_cast<ql::i16>(this->c.b) - value, static_cast<ql::i16>(ql::u8_max));
+			this->c.r = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.r) - value, static_cast<ql::i16>(ql::u8_max)));
+			this->c.g = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.g) - value, static_cast<ql::i16>(ql::u8_max)));
+			this->c.b = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.b) - value, static_cast<ql::i16>(ql::u8_max)));
 			return *this;
 		}
 		template<typename T> requires is_arithmetic<T>
@@ -1736,6 +2213,22 @@ namespace ql {
 		static const ql::rgb unset;
 	};
 
+
+	ql::frgb::operator rgb() const {
+		rgb result;
+		result.c.r = static_cast<ql::u8>(ql::clamp_0_1(this->r) * 255.0f);
+		result.c.g = static_cast<ql::u8>(ql::clamp_0_1(this->g) * 255.0f);
+		result.c.b = static_cast<ql::u8>(ql::clamp_0_1(this->b) * 255.0f);
+		result.c.a = ql::u8{ 255 };
+		return result;
+	}
+	rgb ql::frgb::get_rgb() const {
+		return this->operator ql::rgb();
+	}
+	ql::frgb& ql::frgb::operator=(const ql::rgb& rgb) {
+		*this = rgb.operator ql::frgb();
+		return *this;
+	}
 	const ql::rgb ql::rgb::red = 0xFF'00'00;
 	const ql::rgb ql::rgb::green = 0x00'FF'00;
 	const ql::rgb ql::rgb::blue = 0x00'00'FF;
@@ -2171,8 +2664,10 @@ namespace ql {
 	struct framework {
 		void draw_call();
 		void display();
-		bool game_loop_segment();
 
+		void check_resize();
+
+		bool game_loop_segment();
 		bool game_loop_segment_no_display();
 		bool game_loop_update_segment();
 		void game_loop();
@@ -2517,7 +3012,7 @@ namespace ql {
 		ql::framework* framework;
 		ql::event_info event;
 
-		sf::Color clear_color = sf::Color::Black;
+		ql::rgb clear_color = ql::rgb::black;
 		bool m_pop_this_state = false;
 		bool m_allow_exit = true;
 		bool m_allow_clear = true;
@@ -2525,45 +3020,49 @@ namespace ql {
 	};
 
 	void framework::draw_call() {
-			if (this->states.back()->is_clear_allowed()) {
-				this->states.back()->clear();
-			}
-			this->states.back()->drawing();
-			if (this->states.back()->is_display_allowed()) {
-				this->window.display();
-			}
+		if (this->states.back()->is_clear_allowed()) {
+			this->states.back()->clear();
 		}
+		this->states.back()->drawing();
+		if (this->states.back()->is_display_allowed()) {
+			this->window.display();
+		}
+	}
 	void framework::display() {
 		this->window.display();
 	}
-	bool framework::game_loop_segment() {
-			if (!this->is_created()) {
-				this->create();
-			}
-
-			this->m_frametime = this->m_frametime_clock.elapsed_reset();
-
-			this->states.back()->event_update();
-
-			if (this->states.back()->event.resized()) {
-				auto new_dimension = this->states.back()->event.resized_size();
-				sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
-				this->window.setView(sf::View(view));
-				this->m_dimension = new_dimension;
-				this->states.back()->call_on_resize();
-			}
-			this->states.back()->updating();
-			this->states.back()->update_close_window();
-
-			if (this->states.back()->m_pop_this_state) {
-				this->states.pop_back();
-				if (this->states.empty()) {
-					return false;
-				}
-			}
-			this->draw_call();
-			return true;
+	void framework::check_resize() {
+		if (this->states.back()->event.resized()) {
+			auto new_dimension = this->states.back()->event.resized_size();
+			sf::FloatRect view(0.0f, 0.0f, static_cast<ql::f32>(new_dimension.x), static_cast<ql::f32>(new_dimension.y));
+			this->window.setView(sf::View(view));
+			this->m_dimension = new_dimension;
+			this->states.back()->call_on_resize();
 		}
+	}
+	bool framework::game_loop_segment() {
+		if (!this->is_created()) {
+			this->create();
+		}
+
+		this->m_frametime = this->m_frametime_clock.elapsed_reset();
+
+		this->states.back()->event_update();
+
+		this->check_resize();
+
+		this->states.back()->updating();
+		this->states.back()->update_close_window();
+
+		if (this->states.back()->m_pop_this_state) {
+			this->states.pop_back();
+			if (this->states.empty()) {
+				return false;
+			}
+		}
+		this->draw_call();
+		return true;
+	}
 	bool framework::game_loop_segment_no_display() {
 		if (!this->is_created()) {
 			this->create();
@@ -2573,13 +3072,7 @@ namespace ql {
 
 		this->states.back()->event_update();
 
-		if (this->states.back()->event.resized()) {
-			auto new_dimension = this->states.back()->event.resized_size();
-			sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
-			this->window.setView(sf::View(view));
-			this->m_dimension = new_dimension;
-			this->states.back()->call_on_resize();
-		}
+		this->check_resize();
 		this->states.back()->updating();
 		this->states.back()->update_close_window();
 
@@ -2604,14 +3097,7 @@ namespace ql {
 
 		this->states.back()->event_update();
 
-		if (this->states.back()->event.resized()) {
-			auto new_dimension = this->states.back()->event.resized_size();
-			sf::FloatRect view(0.0f, 0.0f, static_cast<float>(new_dimension.x), static_cast<float>(new_dimension.y));
-			this->window.setView(sf::View(view));
-			this->m_dimension = new_dimension;
-			this->states.back()->call_on_resize();
-		}
-
+		this->check_resize();
 		this->states.back()->update_close_window();
 
 		if (this->states.back()->m_pop_this_state) {
