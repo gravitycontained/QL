@@ -434,9 +434,10 @@ namespace ql {
 	}
 
 	template<typename C> requires ql::is_contiguous_container<C>
-	void clear_container(C& data, ql::container_subtype<C> clear_value = 0) {
-		memset(data.data(), static_cast<ql::i32>(clear_value), data.size() * sizeof(ql::container_subtype<C>));
+	void fill_container(C& data, ql::container_subtype<C> fill_value = 0) {
+		memset(data.data(), static_cast<ql::i32>(fill_value), data.size() * sizeof(ql::container_subtype<C>));
 	}
+
 
 	template<typename T1, typename T2>
 	constexpr auto min(T1 a, T2 b) {
@@ -528,6 +529,7 @@ namespace ql {
 			return {};
 		}
 
+		progress = ql::clamp_0_1(progress);
 		auto index = static_cast<ql::u32>(progress * (data.size() - 1));
 
 		ql::container_subtype<C> a = data[index];
@@ -548,6 +550,7 @@ namespace ql {
 			return {};
 		}
 
+		progress = ql::clamp_0_1(progress);
 		auto index = static_cast<ql::u32>(progress * (data.size() - 1));
 
 		ql::container_subtype<C> a, b, c, d;
@@ -1221,6 +1224,21 @@ namespace ql {
 		return ql::detail::rng.rng.generate(dist);
 	}
 
+
+	template<typename F> requires is_floating_point<F>
+	bool random_event(F chance) {
+		return ql::random(F{ 0 }, F{ 1 }) < chance;
+	}
+
+	template<typename T> requires is_integer<T>
+	bool random_event(T n, T out_of) {
+		return ql::random(T{ 1 }, out_of) <= n;
+	}
+
+	bool random_event() {
+		return ql::random(0u, 1u) == 0u;
+	}
+
 	//perlin noise 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -1264,7 +1282,7 @@ namespace ql {
 			return linear_interpolation(x, y, s * s * (3 - 2 * s));
 		}
 
-		float_type get(float_type x, float_type y, float_type freq, ql::u32 depth) {
+		float_type get(float_type x, float_type y, float_type freq, ql::size depth) {
 			float_type xa = x * freq;
 			float_type ya = y * freq;
 			float_type amp = 1.0;
@@ -1284,7 +1302,7 @@ namespace ql {
 		float_type get(float_type x, float_type y) {
 			return this->get(x, y, this->frequency, this->depth);
 		}
-		float_type operator()(float_type x, float_type y, float_type freq, ql::u32 depth) {
+		float_type operator()(float_type x, float_type y, float_type freq, ql::size depth) {
 			return this->get(x, y, freq, depth);
 		}
 		float_type operator()(float_type x, float_type y) {
@@ -1297,7 +1315,10 @@ namespace ql {
 			this->set_seed(5678u);
 		}
 		void create_hash() {
-			ql::clear_container(this->m_hash);
+			for (uint_type i = 0u; i < N; ++i) {
+				this->m_hash[i] = i;
+			}
+
 			for (uint_type i = 0u; i < N - 1; ++i) {
 				auto j = this->m_engine.generate(i + 1, static_cast<uint_type>(N) - 1);
 				std::swap(this->m_hash[i], this->m_hash[j]);
@@ -2746,13 +2767,13 @@ namespace ql {
 		void clear() {
 			this->framework->window.clear(this->clear_color);
 		}
-		void call_on_resize() {
+		virtual void call_on_resize() {
 
 		}
-		void call_on_close() {
+		virtual void call_on_close() {
 
 		}
-		void call_after_window_create() {
+		virtual void call_after_window_create() {
 
 		}
 		void draw_call() {
