@@ -2622,27 +2622,33 @@ namespace ql {
 	};
 
 	template<typename T>
-	struct rectangle {
+	struct hitbox {
 		ql::vector2<T> position;
 		ql::vector2<T> dimension;
+
+		template<typename U>
+		bool contains(ql::vector2<U> position) const {
+			return position.x >= this->position.x && position.x <= (this->position.x + this->dimension.y) &&
+				   position.y >= this->position.y && position.y <= (this->position.y + this->dimension.y);
+		}
 	};
 
-	ql::rectangle<ql::f32> text_hitbox(const sf::Text& text) {
-		ql::rectangle<ql::f32> rectangle;
+	ql::hitbox<ql::f32> text_hitbox(const sf::Text& text) {
+		ql::hitbox<ql::f32> hitbox;
 		auto local_bounds = text.getLocalBounds();
 		auto global_bounds = text.getGlobalBounds();
 
-		rectangle.position = { global_bounds.left, global_bounds.top };
-		rectangle.dimension = { local_bounds.width, local_bounds.height };
+		hitbox.position = { global_bounds.left, global_bounds.top };
+		hitbox.dimension = { local_bounds.width, local_bounds.height };
 
-		return rectangle;
+		return hitbox;
 	}
 	void centerize_text(sf::Text& text) {
 		auto rect = ql::text_hitbox(text).dimension;
 		text.move(-rect / 2);
 	}
 
-	//base state / framework
+	//drawables
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 	struct draw_object;
@@ -2679,6 +2685,9 @@ namespace ql {
 		sf::RenderWindow* window;
 		sf::RenderStates states;
 	};
+	//base state / framework
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
 
 	struct base_state;
 
