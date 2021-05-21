@@ -43,26 +43,19 @@ sfml-network-d.lib
 ```
 #include <ql.hpp>
 
-struct circle {
-	void draw(ql::draw_object& object) const {
-		object.draw(circle);
-	}
-	sf::CircleShape circle;
-};
-
 struct game_state : ql::base_state {
 	void init() override {
-		this->c.circle.setRadius(100);
-		this->c.circle.setPosition(ql::vector2f{ 200, 200 });
-		this->c.circle.setFillColor(ql::rgb::red);
+		this->circle.setRadius(100);
+		this->circle.setPosition(ql::vector2f{ 200, 200 });
+		this->circle.setFillColor(ql::rgb::red);
 	}
 	void updating() override {
 
 	}
 	void drawing() override {
-		this->draw(this->c);
+		this->draw(this->circle);
 	}
-	circle c;
+	sf::CircleShape circle;
 };
 
 int main() {
