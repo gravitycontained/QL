@@ -100,6 +100,6 @@ int main() {
 }
 ```
 
-compile and execute and you should see this:
+compile and execute either and you should see this:
 
 ![Red Circle on Black Background](https://i.imgur.com/jahBJvQ.png)
