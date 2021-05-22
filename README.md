@@ -41,6 +41,8 @@ sfml-network-d.lib
 # SFML Hello World
 
 ```
+#include <SFML/Graphics.hpp>
+
 int main() {
 	auto dimension = sf::VideoMode(1280u, 720u);
 	auto title = "SFML";
