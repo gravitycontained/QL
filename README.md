@@ -45,7 +45,7 @@ sfml-network-d.lib
 
 int main() {
 	auto dimension = sf::VideoMode(1280u, 720u);
-	auto title = "SFML";
+	auto title = "hello world";
 	sf::RenderWindow window;
 	window.create(dimension, title);
 
