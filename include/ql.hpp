@@ -1966,13 +1966,12 @@ namespace ql {
 		}
 
 
-		ql::rgb& interpolate(ql::rgb color, ql::f64 strength) {
+		void interpolate(ql::rgb color, ql::f64 strength) {
 			strength = ql::clamp(ql::f64{ 0 }, strength, ql::f64{ 1 });
 			this->c.r = static_cast<ql::u8>((this->c.r * (1 - strength) + color.c.r * strength));
 			this->c.g = static_cast<ql::u8>((this->c.g * (1 - strength) + color.c.g * strength));
 			this->c.b = static_cast<ql::u8>((this->c.b * (1 - strength) + color.c.b * strength));
 			this->c.a = static_cast<ql::u8>((this->c.a * (1 - strength) + color.c.a * strength));
-			return *this;
 		}
 		ql::rgb interpolated(ql::rgb color, ql::f64 strength) const {
 			auto copy = *this;
