@@ -420,7 +420,7 @@ namespace ql {
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 	template<typename T, typename ... Args>
-	constexpr auto to_array(Args... args) {
+	constexpr auto to_array_t(Args... args) {
 		std::array<T, sizeof...(Args)> result{ static_cast<T>(args)... };
 
 		return result;
@@ -1374,7 +1374,7 @@ namespace ql {
 		}
 		template<typename... Args>
 		constexpr vectorN(Args... list) {
-			*this = ql::to_array<T>(list...);
+			*this = ql::to_array_t<T>(list...);
 		}
 		template<typename U>
 		constexpr vectorN(const std::initializer_list<U>& list) {
