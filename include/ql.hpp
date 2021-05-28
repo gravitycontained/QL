@@ -1991,11 +1991,10 @@ namespace ql {
 			return colors[index].interpolated(colors[index + 1], left_over);
 		}
 
-		ql::rgb& invert() {
+		void invert() {
 			this->c.r = 255 - this->c.r;
 			this->c.g = 255 - this->c.g;
 			this->c.b = 255 - this->c.b;
-			return *this;
 		}
 		ql::rgb inverted() const {
 			auto copy = *this;
