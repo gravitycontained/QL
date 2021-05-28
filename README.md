@@ -38,31 +38,55 @@ sfml-audio-d.lib
 sfml-network-d.lib
 ```
 
-# Hello World
+# SFML Hello World
+
+```
+#include <SFML/Graphics.hpp>
+
+int main() {
+	auto dimension = sf::VideoMode(1280u, 720u);
+	auto title = "hello world";
+	sf::RenderWindow window;
+	window.create(dimension, title);
+
+	sf::CircleShape circle;
+	circle.setRadius(100);
+	circle.setPosition(200, 200);
+	circle.setFillColor(sf::Color::Red);
+
+	while (window.isOpen()) {
+		sf::Event event;
+		while (window.pollEvent(event)) {
+			if (event.type == sf::Event::Closed) {
+				window.close();
+			}
+		}
+
+		window.clear();
+		window.draw(circle);
+		window.display();
+	}
+}
+```
+
+# QL Hello World
 
 ```
 #include <ql.hpp>
 
-struct circle {
-	void draw(ql::draw_object& object) const {
-		object.draw(circle);
-	}
-	sf::CircleShape circle;
-};
-
 struct game_state : ql::base_state {
 	void init() override {
-		this->c.circle.setRadius(100);
-		this->c.circle.setPosition(ql::vector2f{ 200, 200 });
-		this->c.circle.setFillColor(ql::rgb::red);
+		this->circle.setRadius(100);
+		this->circle.setPosition(ql::vector2f{ 200, 200 });
+		this->circle.setFillColor(ql::rgb::red);
 	}
 	void updating() override {
 
 	}
 	void drawing() override {
-		this->draw(this->c);
+		this->draw(this->circle);
 	}
-	circle c;
+	sf::CircleShape circle;
 };
 
 int main() {
@@ -76,6 +100,6 @@ int main() {
 }
 ```
 
-compile and execute and you should see this:
+compile and execute either and you should see this:
 
 ![Red Circle on Black Background](https://i.imgur.com/jahBJvQ.png)
