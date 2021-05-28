@@ -1,0 +1,14 @@
+﻿  main.cpp
+C:\Users\_alloca\source\repos\Pong\App\source\main.cpp(80,1): warning C4244: '-=': conversion from 'ql::f64' to 'T', possible loss of data
+          with
+          [
+              T=ql::f32
+          ]
+C:\Users\_alloca\source\repos\Pong\App\source\main.cpp(87,1): warning C4244: '+=': conversion from 'ql::f64' to 'T', possible loss of data
+          with
+          [
+              T=ql::f32
+          ]
+C:\Users\_alloca\source\repos\Pong\App\source\main.cpp(143,27): warning C4244: '=': conversion from 'ql::f64' to 'ql::u8', possible loss of data
+C:\Users\_alloca\source\repos\Pong\App\source\main.cpp(147,1): warning C4244: '+=': conversion from 'ql::f64' to 'ql::f32', possible loss of data
+  App.vcxproj -> C:\Users\_alloca\source\repos\Pong\x64\Debug\App.exe
