@@ -1725,7 +1725,7 @@ namespace ql {
 	//rgb
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-	union rgb;
+	struct rgb;
 
 	struct frgb {
 		ql::f32 r = 0.0f;
@@ -1871,7 +1871,7 @@ namespace ql {
 		}
 	};
 
-	union rgb {
+	struct rgb {
 		rgb() {
 			*this = rgb::white;
 		}
@@ -1881,10 +1881,10 @@ namespace ql {
 		}
 #endif
 		rgb(ql::u8 r, ql::u8 g, ql::u8 b, ql::u8 a = ql::u8_max) {
-			this->c.r = r;
-			this->c.g = g;
-			this->c.b = b;
-			this->c.a = a;
+			this->r = r;
+			this->g = g;
+			this->b = b;
+			this->a = a;
 		}
 		rgb(ql::u32 hex) {
 			*this = hex;
@@ -1892,14 +1892,15 @@ namespace ql {
 		rgb(const rgb& other) {
 			*this = other;
 		}
-
-		struct {
-			ql::u8 r;
-			ql::u8 g;
-			ql::u8 b;
-			ql::u8 a;
-		} c;
-		ql::u32 uint;
+		union {
+			struct {
+				ql::u8 r;
+				ql::u8 g;
+				ql::u8 b;
+				ql::u8 a;
+			};
+			ql::u32 uint;
+		};
 
 		ql::rgb& operator=(const frgb& other) {
 			*this = other.get_rgb();
@@ -1911,26 +1912,26 @@ namespace ql {
 		}
 #ifndef QL_NO_SFML
 		ql::rgb& operator=(const sf::Color& color) {
-			this->c.r = color.r;
-			this->c.g = color.g;
-			this->c.b = color.b;
-			this->c.a = color.a;
+			this->r = color.r;
+			this->g = color.g;
+			this->b = color.b;
+			this->a = color.a;
 			return *this;
 		}
 		operator sf::Color() const {
 			sf::Color color;
-			color.r = this->c.r;
-			color.g = this->c.g;
-			color.b = this->c.b;
-			color.a = this->c.a;
+			color.r = this->r;
+			color.g = this->g;
+			color.b = this->b;
+			color.a = this->a;
 			return color;
 		}
 #endif
 		operator frgb() const {
 			frgb result;
-			result.r = this->c.r / 255.0f;
-			result.g = this->c.g / 255.0f;
-			result.b = this->c.b / 255.0f;
+			result.r = this->r / 255.0f;
+			result.g = this->g / 255.0f;
+			result.b = this->b / 255.0f;
 			return result;
 		}
 
@@ -1952,11 +1953,11 @@ namespace ql {
 		std::string string() const {
 			std::ostringstream stream;
 			stream << '(';
-			stream << static_cast<ql::i16>(this->c.r) << ", ";
-			stream << static_cast<ql::i16>(this->c.g) << ", ";
-			stream << static_cast<ql::i16>(this->c.b);
-			if (this->c.a != ql::u8_max) {
-				stream << ", " << static_cast<ql::i16>(this->c.a);
+			stream << static_cast<ql::i16>(this->r) << ", ";
+			stream << static_cast<ql::i16>(this->g) << ", ";
+			stream << static_cast<ql::i16>(this->b);
+			if (this->a != ql::u8_max) {
+				stream << ", " << static_cast<ql::i16>(this->a);
 			}
 			stream << ')';
 			return stream.str();
@@ -1966,12 +1967,13 @@ namespace ql {
 		}
 
 
-		void interpolate(ql::rgb color, ql::f64 strength) {
+		ql::rgb& interpolate(ql::rgb color, ql::f64 strength) {
 			strength = ql::clamp(ql::f64{ 0 }, strength, ql::f64{ 1 });
-			this->c.r = static_cast<ql::u8>((this->c.r * (1 - strength) + color.c.r * strength));
-			this->c.g = static_cast<ql::u8>((this->c.g * (1 - strength) + color.c.g * strength));
-			this->c.b = static_cast<ql::u8>((this->c.b * (1 - strength) + color.c.b * strength));
-			this->c.a = static_cast<ql::u8>((this->c.a * (1 - strength) + color.c.a * strength));
+			this->r = static_cast<ql::u8>((this->r * (1 - strength) + color.r * strength));
+			this->g = static_cast<ql::u8>((this->g * (1 - strength) + color.g * strength));
+			this->b = static_cast<ql::u8>((this->b * (1 - strength) + color.b * strength));
+			this->a = static_cast<ql::u8>((this->a * (1 - strength) + color.a * strength));
+			return *this;
 		}
 		ql::rgb interpolated(ql::rgb color, ql::f64 strength) const {
 			auto copy = *this;
@@ -1991,9 +1993,9 @@ namespace ql {
 		}
 
 		void invert() {
-			this->c.r = 255 - this->c.r;
-			this->c.g = 255 - this->c.g;
-			this->c.b = 255 - this->c.b;
+			this->r = 255 - this->r;
+			this->g = 255 - this->g;
+			this->b = 255 - this->b;
 		}
 		ql::rgb inverted() const {
 			auto copy = *this;
@@ -2002,14 +2004,14 @@ namespace ql {
 		}
 		ql::rgb with_alpha(ql::u8 alpha) const {
 			auto copy = *this;
-			copy.c.a = alpha;
+			copy.a = alpha;
 			return copy;
 		}
 
 		ql::rgb& operator*=(ql::rgb other) {
-			this->c.r *= other.c.r;
-			this->c.g *= other.c.g;
-			this->c.b *= other.c.b;
+			this->r *= other.r;
+			this->g *= other.g;
+			this->b *= other.b;
 			return *this;
 		}
 		ql::rgb operator*(ql::rgb other) const {
@@ -2018,9 +2020,9 @@ namespace ql {
 			return copy;
 		}
 		ql::rgb& operator-=(ql::rgb other) {
-			this->c.r -= other.c.r;
-			this->c.g -= other.c.g;
-			this->c.b -= other.c.b;
+			this->r -= other.r;
+			this->g -= other.g;
+			this->b -= other.b;
 			return *this;
 		}
 		ql::rgb operator-(ql::rgb other) const {
@@ -2029,9 +2031,9 @@ namespace ql {
 			return copy;
 		}
 		ql::rgb& operator/=(ql::rgb other) {
-			this->c.r /= other.c.r;
-			this->c.g /= other.c.g;
-			this->c.b /= other.c.b;
+			this->r /= other.r;
+			this->g /= other.g;
+			this->b /= other.b;
 			return *this;
 		}
 		ql::rgb operator/(ql::rgb other) const {
@@ -2040,9 +2042,9 @@ namespace ql {
 			return copy;
 		}
 		ql::rgb& operator+=(ql::rgb other) {
-			this->c.r += other.c.r;
-			this->c.g += other.c.g;
-			this->c.b += other.c.b;
+			this->r += other.r;
+			this->g += other.g;
+			this->b += other.b;
 			return *this;
 		}
 		ql::rgb operator+(ql::rgb other) const {
@@ -2054,9 +2056,9 @@ namespace ql {
 
 		template<typename T> requires is_arithmetic<T>
 		ql::rgb& operator/=(T value) {
-			this->c.r = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.r / value), static_cast<ql::i64>(ql::u8_max)));
-			this->c.g = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.g / value), static_cast<ql::i64>(ql::u8_max)));
-			this->c.b = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.b / value), static_cast<ql::i64>(ql::u8_max)));
+			this->r = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->r / value), static_cast<ql::i64>(ql::u8_max)));
+			this->g = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->g / value), static_cast<ql::i64>(ql::u8_max)));
+			this->b = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->b / value), static_cast<ql::i64>(ql::u8_max)));
 			return *this;
 		}
 		template<typename T> requires is_arithmetic<T>
@@ -2067,9 +2069,9 @@ namespace ql {
 		}
 		template<typename T> requires is_arithmetic<T>
 		ql::rgb& operator*=(T value) {
-			this->c.r = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.r * value), static_cast<ql::i64>(ql::u8_max)));
-			this->c.g = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.g * value), static_cast<ql::i64>(ql::u8_max)));
-			this->c.b = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->c.b * value), static_cast<ql::i64>(ql::u8_max)));
+			this->r = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->r * value), static_cast<ql::i64>(ql::u8_max)));
+			this->g = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->g * value), static_cast<ql::i64>(ql::u8_max)));
+			this->b = static_cast<ql::u8>(ql::clamp<ql::i64>(ql::i64{ 0 }, static_cast<ql::i64>(this->b * value), static_cast<ql::i64>(ql::u8_max)));
 			return *this;
 		}
 		template<typename T> requires is_arithmetic<T>
@@ -2080,9 +2082,9 @@ namespace ql {
 		}
 		template<typename T> requires is_arithmetic<T>
 		ql::rgb& operator+=(T value) {
-			this->c.r = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.r) + value, static_cast<ql::i16>(ql::u8_max)));
-			this->c.g = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.g) + value, static_cast<ql::i16>(ql::u8_max)));
-			this->c.b = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.b) + value, static_cast<ql::i16>(ql::u8_max)));
+			this->r = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->r) + value, static_cast<ql::i16>(ql::u8_max)));
+			this->g = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->g) + value, static_cast<ql::i16>(ql::u8_max)));
+			this->b = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->b) + value, static_cast<ql::i16>(ql::u8_max)));
 			return *this;
 		}
 		template<typename T> requires is_arithmetic<T>
@@ -2093,9 +2095,9 @@ namespace ql {
 		}
 		template<typename T> requires is_arithmetic<T>
 		ql::rgb& operator-=(T value) {
-			this->c.r = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.r) - value, static_cast<ql::i16>(ql::u8_max)));
-			this->c.g = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.g) - value, static_cast<ql::i16>(ql::u8_max)));
-			this->c.b = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->c.b) - value, static_cast<ql::i16>(ql::u8_max)));
+			this->r = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->r) - value, static_cast<ql::i16>(ql::u8_max)));
+			this->g = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->g) - value, static_cast<ql::i16>(ql::u8_max)));
+			this->b = static_cast<ql::u8>(ql::clamp(ql::i16{ 0 }, static_cast<ql::i16>(this->b) - value, static_cast<ql::i16>(ql::u8_max)));
 			return *this;
 		}
 		template<typename T> requires is_arithmetic<T>
@@ -2122,10 +2124,10 @@ namespace ql {
 
 	ql::frgb::operator rgb() const {
 		rgb result;
-		result.c.r = static_cast<ql::u8>(ql::clamp_0_1(this->r) * 255.0f);
-		result.c.g = static_cast<ql::u8>(ql::clamp_0_1(this->g) * 255.0f);
-		result.c.b = static_cast<ql::u8>(ql::clamp_0_1(this->b) * 255.0f);
-		result.c.a = ql::u8{ 255 };
+		result.r = static_cast<ql::u8>(ql::clamp_0_1(this->r) * 255.0f);
+		result.g = static_cast<ql::u8>(ql::clamp_0_1(this->g) * 255.0f);
+		result.b = static_cast<ql::u8>(ql::clamp_0_1(this->b) * 255.0f);
+		result.a = ql::u8{ 255 };
 		return result;
 	}
 	rgb ql::frgb::get_rgb() const {
@@ -2396,11 +2398,17 @@ namespace ql {
 		bool key_pressed() const {
 			return this->m_key_pressed;
 		}
+		sf::Keyboard::Key key_pressed_type() const {
+			return this->m_key_pressed_key;
+		}
 		bool key_single_pressed() const {
 			return this->m_key_single_pressed;
 		}
 		bool key_released() const {
 			return this->m_key_released;
+		}
+		sf::Keyboard::Key key_released_type() const {
+			return this->m_key_released_key;
 		}
 		bool key_single_released() const {
 			return this->m_key_single_released;
@@ -2504,6 +2512,8 @@ namespace ql {
 		std::set<sf::Keyboard::Key> m_keys_single_pressed;
 		std::set<sf::Keyboard::Key> m_keys_single_released;
 		std::set<sf::Keyboard::Key> m_keys_holding;
+		sf::Keyboard::Key m_key_released_key;
+		sf::Keyboard::Key m_key_pressed_key;
 	};
 
 	template<typename T>
@@ -2717,6 +2727,9 @@ namespace ql {
 			this->event.m_keys_released.clear();
 			this->event.m_keys_single_pressed.clear();
 
+			this->event.m_key_pressed_key = sf::Keyboard::Unknown;
+			this->event.m_key_released_key = sf::Keyboard::Unknown;
+
 			this->event.m_text_entered.clear();
 
 			while (this->framework->window.pollEvent(event)) {
@@ -2758,6 +2771,7 @@ namespace ql {
 					}
 				}
 				else if (event.type == sf::Event::KeyPressed) {
+					this->event.m_key_pressed_key = event.key.code;
 					this->event.m_key_pressed = true;
 					this->event.m_key_holding = true;
 					this->event.m_keys_pressed.insert(event.key.code);
@@ -2769,6 +2783,7 @@ namespace ql {
 
 				}
 				else if (event.type == sf::Event::KeyReleased) {
+					this->event.m_key_released_key = event.key.code;
 					this->event.m_key_released = true;
 					this->event.m_key_holding = false;
 					this->event.m_keys_released.insert(event.key.code);

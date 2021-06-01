@@ -140,7 +140,7 @@ struct circle {
 	void update_cooldown() {
 		if (this->respawn_cooldown.elapsed_f() < this->respawn_duration) {
 			auto progress = this->respawn_cooldown.elapsed_f() / this->respawn_duration;
-			this->color.c.a = (255 * progress);
+			this->color.a = (255 * progress);
 		}
 	}
 	void update_speed_over_time(ql::f64 frame_time) {
@@ -359,6 +359,8 @@ struct button {
 struct menu_state : ql::base_state {
 
 	void init() override {
+		ql::println(384, " bytes");
+
 		this->play_button.init(this->get_font("arial"), "PLAY", this->dimension(), 200);
 		this->exit_button.init(this->get_font("arial"), "EXIT", this->dimension(), 400);
 
