@@ -1,14 +1,11 @@
 # QL
 
-Written by Daniel Rabl (danielrabl1999@gmail.com). Created 2021 March, 10
+Written by Daniel Rabl (danielrabl1999@gmail.com). Created on 2022 March 27.
 
 A mini version of [QPL](https://github.com/DanielRabl/QPL)
 
-Comes with standard utility and SFML utilities.
-`#define QL_NO_SFML` to not use any SFML utilities.
-
 # Setup
-To use this library, download the zip and include `ql.hpp`. Set the C++ Standard to latest version to `/std:c++20` or `/std:c++latest`.
+To use this library, download the zip and include `ql.hpp`. Set the C++ Standard to latest version to `/std:c++20` or `/std:c++latest` and enable modules.
 
 Download latest [SFML](https://www.sfml-dev.org/) version. Look for 64 bit version if possible. 
 
@@ -71,35 +68,4 @@ int main() {
 
 # QL Hello World
 
-```
-#include <ql.hpp>
-
-struct game_state : ql::base_state {
-	void init() override {
-		this->circle.setRadius(100);
-		this->circle.setPosition(ql::vector2f{ 200, 200 });
-		this->circle.setFillColor(ql::rgb::red);
-	}
-	void updating() override {
-
-	}
-	void drawing() override {
-		this->draw(this->circle);
-	}
-	sf::CircleShape circle;
-};
-
-int main() {
-
-	ql::framework framework;
-	framework.set_title("hello world");
-	framework.set_dimension({ 1280u, 720u });
-	
-	framework.add_state<game_state>();
-	framework.game_loop();
-}
-```
-
-compile and execute either and you should see this:
-
-![Red Circle on Black Background](https://i.imgur.com/jahBJvQ.png)
+ will come later!
