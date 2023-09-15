@@ -1,8 +1,8 @@
 # QL
 
-Written by Daniel Rabl (danielrabl1999@gmail.com). Created on 2022 March 27.
+Created on 2022 March 27.
 
-A mini version of [QPL](https://github.com/DanielRabl/QPL)
+A mini version of [QPL](https://github.com/gravitycontained/QPL)
 
 # Setup
 To use this library, download the zip and include `ql.hpp`. Set the C++ Standard to latest version to `/std:c++20` or `/std:c++latest` and enable modules.
